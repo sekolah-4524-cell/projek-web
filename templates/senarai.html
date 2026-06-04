@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Senarai Pengguna</title>
+
+<link rel="stylesheet"
+href="{{ url_for('static',
+filename='style.css') }}">
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>Senarai Pengguna</h2>
+
+<table>
+
+<tr>
+<th>ID</th>
+<th>Nama</th>
+<th>Email</th>
+<th>Tindakan</th>
+</tr>
+
+{% for row in data %}
+
+<tr>
+
+<td>{{ row[0] }}</td>
+<td>{{ row[1] }}</td>
+<td>{{ row[2] }}</td>
+
+<td>
+
+<a href="/edit/{{ row[0] }}">
+Edit
+</a>
+
+|
+
+<a href="/delete/{{ row[0] }}"
+onclick="return confirm('Padam?')">
+
+Delete
+
+</a>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+<br>
+
+<a href="/">
+Kembali
+</a>
+
+</div>
+
+</body>
+
+</html>

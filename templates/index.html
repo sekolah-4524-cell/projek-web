@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Pendaftaran</title>
+
+<link rel="stylesheet"
+href="{{ url_for('static',
+filename='style.css') }}">
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>Borang Pendaftaran</h2>
+
+<form method="POST"
+action="/simpan">
+
+Nama
+
+<input type="text"
+name="nama"
+required>
+
+Email
+
+<input type="email"
+name="email"
+required>
+
+<br><br>
+
+<button>
+Simpan
+</button>
+
+</form>
+
+<br>
+
+<a href="/senarai">
+Lihat Senarai Pengguna
+</a>
+
+</div>
+
+</body>
+
+</html>
