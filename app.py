@@ -1,45 +1,32 @@
-from flask import Flask, request
-import pymysql
+from flask import Flask, request, render_template
+import sqlite3
 
 app = Flask(__name__)
+conn = sqlite3.connect(
+    "database.db",
+    check_same_thread=False
+)
 
+cursor = conn.cursor()
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS pengguna(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nama TEXT,
+    email TEXT
+)
+""")
+
+conn.commit()
 def sambung_db():
-    return pymysql.connect(
-        host="127.0.0.1",
-        port=3306,
-        user="root",
-        password="",
-        database="latihan_web"
-    )
+    return sqlite3.connect("database.db")
+    
 
 @app.route('/')
 def home():
-
-    return """
-    <h2>Borang Pendaftaran</h2>
-
-    <form method="POST" action="/simpan">
-
-        Nama:<br>
-        <input type="text" name="nama" required>
-
-        <br><br>
-
-        Email:<br>
-        <input type="email" name="email" required>
-
-        <br><br>
-
-        <button type="submit">
-            Simpan
-        </button>
-
-    </form>
-
-    <br>
-
-    <a href="/senarai">Lihat Senarai Pengguna</a>
-    """
+    return render_template(
+        'index.html'
+    )
 
 @app.route('/simpan', methods=['POST'])
 def simpan():
@@ -52,7 +39,7 @@ def simpan():
     cursor = db.cursor()
 
     cursor.execute(
-        "INSERT INTO pengguna (nama,email) VALUES (%s,%s)",
+        "INSERT INTO pengguna (nama,email) VALUES (?,?)",
         (nama,email)
     )
 
@@ -69,7 +56,6 @@ def simpan():
     """
 
 @app.route('/senarai')
-@app.route('/senarai')
 def senarai():
 
     db = sambung_db()
@@ -82,51 +68,10 @@ def senarai():
 
     data = cursor.fetchall()
 
-    html = """
-    <h2>Senarai Pengguna</h2>
-
-    <table border='1' cellpadding='8'>
-
-    <tr>
-        <th>ID</th>
-        <th>Nama</th>
-        <th>Email</th>
-        <th>Tindakan</th>
-    </tr>
-    """
-
-    for row in data:
-
-        html += f"""
-        <tr>
-            <td>{row[0]}</td>
-            <td>{row[1]}</td>
-            <td>{row[2]}</td>
-
-            <td>
-                <a href="/edit/{row[0]}">
-                Edit
-                </a>
-
-                |
-
-                <a href="/delete/{row[0]}"
-                onclick="return confirm('Padam data ini?')">
-                Delete
-                </a>
-            </td>
-        </tr>
-        """
-
-    html += """
-    </table>
-
-    <br>
-
-    <a href="/">Kembali</a>
-    """
-
-    return html
+    return render_template(
+        'senarai.html',
+        data=data
+    )
 @app.route('/delete/<int:id>')
 def delete(id):
 
@@ -135,7 +80,7 @@ def delete(id):
     cursor = db.cursor()
 
     cursor.execute(
-        "DELETE FROM pengguna WHERE id=%s",
+        "DELETE FROM pengguna WHERE id=?",
         (id,)
     )
 
@@ -158,42 +103,16 @@ def edit(id):
     cursor = db.cursor()
 
     cursor.execute(
-        "SELECT * FROM pengguna WHERE id=%s",
+        "SELECT * FROM pengguna WHERE id=?",
         (id,)
     )
 
     row = cursor.fetchone()
 
-    return f"""
-    <h2>Edit Pengguna</h2>
-
-    <form method="POST"
-          action="/update/{id}">
-
-        Nama:<br>
-
-        <input
-            name="nama"
-            value="{row[1]}"
-        >
-
-        <br><br>
-
-        Email:<br>
-
-        <input
-            name="email"
-            value="{row[2]}"
-        >
-
-        <br><br>
-
-        <button>
-            Update
-        </button>
-
-    </form>
-    """
+    return render_template(
+        'edit.html',
+        row=row
+    )
 @app.route('/update/<int:id>',
            methods=['POST'])
 def update(id):
@@ -208,9 +127,9 @@ def update(id):
     cursor.execute(
         """
         UPDATE pengguna
-        SET nama=%s,
-            email=%s
-        WHERE id=%s
+        SET nama=?,
+            email=?
+        WHERE id=?
         """,
         (nama,email,id)
     )
