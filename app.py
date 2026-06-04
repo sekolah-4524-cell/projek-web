@@ -44,7 +44,8 @@ def simpan():
     )
 
     db.commit()
-
+    db.close()
+    
     return """
     <h3>Data berjaya disimpan!</h3>
 
@@ -54,6 +55,7 @@ def simpan():
 
     <a href="/senarai">Lihat Senarai Pengguna</a>
     """
+    
 
 @app.route('/senarai')
 def senarai():
@@ -72,6 +74,9 @@ def senarai():
         'senarai.html',
         data=data
     )
+    db.commit()
+    db.close()
+    
 @app.route('/delete/<int:id>')
 def delete(id):
 
@@ -85,7 +90,8 @@ def delete(id):
     )
 
     db.commit()
-
+    db.close()
+    
     return """
     Data berjaya dipadam.
 
@@ -113,8 +119,12 @@ def edit(id):
         'edit.html',
         row=row
     )
+    db.commit()
+    db.close()
+    
 @app.route('/update/<int:id>',
            methods=['POST'])
+       
 def update(id):
 
     nama = request.form['nama']
@@ -135,7 +145,8 @@ def update(id):
     )
 
     db.commit()
-
+    db.close()
+    
     return """
     Data berjaya dikemaskini.
 
