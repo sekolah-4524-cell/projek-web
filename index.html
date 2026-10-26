@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Template Mudah RPH & Analisis</title>
+<style>
+:root{--navy:#12304a;--teal:#087e8b;--pale:#edf7f8;--ink:#1d2935;--muted:#64748b;--line:#d9e2ec;--white:#fff}
+*{box-sizing:border-box}body{margin:0;background:#f3f6fa;color:var(--ink);font:15px/1.5 Arial,Helvetica,sans-serif}
+header{background:linear-gradient(120deg,#12304a,#087e8b);color:white;padding:24px max(18px,calc((100% - 1200px)/2))}
+header h1{margin:0 0 6px;font-size:clamp(24px,3vw,34px)}header p{margin:0;color:#e5f6f8}
+main{max-width:1200px;margin:22px auto;padding:0 16px 36px}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+button,.btn{border:0;border-radius:9px;padding:11px 15px;font-weight:700;cursor:pointer;background:var(--teal);color:white}
+button.secondary{background:#e6eef5;color:#12304a}button.dark{background:var(--navy)}button.danger{background:#a83246}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}.tabs button{background:#dce7ef;color:#25435a}.tabs button.active{background:var(--navy);color:white}
+.panel{background:white;border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:16px;box-shadow:0 4px 14px #18354b0a}
+.panel h2{font-size:20px;margin:0 0 16px;color:var(--navy)}.panel h3{font-size:16px;color:var(--teal);margin:18px 0 8px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.field{display:flex;flex-direction:column;gap:5px}.field.wide{grid-column:1/-1}
+label{font-size:13px;font-weight:700;color:#40566a}input,select,textarea{width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:10px 11px;font:inherit;background:white;color:var(--ink)}textarea{min-height:82px;resize:vertical}
+.help{font-size:12px;color:var(--muted);margin-top:4px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.stat{background:var(--pale);padding:16px;border-radius:11px}.stat span{display:block;color:#45616e;font-size:13px}.stat strong{font-size:26px;color:var(--navy)}
+.preview{border:1px solid #cbd5e1;padding:24px;border-radius:8px;background:white}.preview h2{text-align:center;color:#12304a}.preview h3{background:#eaf5f6;padding:7px;color:#12304a}.preview table{width:100%;border-collapse:collapse;margin:8px 0 16px}.preview th,.preview td{border:1px solid #cbd5e1;padding:8px;text-align:left;vertical-align:top}.preview th{background:#f0f5f8;width:25%}.hidden{display:none}.notice{padding:12px;background:#fff7e5;border:1px solid #f4d58d;border-radius:9px;font-size:13px}
+footer{text-align:center;color:var(--muted);padding:14px;font-size:12px}
+@media(max-width:760px){.grid{grid-template-columns:1fr 1fr}.field.wide{grid-column:1/-1}.stats{grid-template-columns:1fr}}
+@media(max-width:480px){.grid{grid-template-columns:1fr}.panel{padding:14px}}
+@media print{body{background:white}header,.toolbar,.tabs,.no-print,footer{display:none!important}main{max-width:none;margin:0;padding:0}.panel:not(#previewPanel){display:none!important}#previewPanel{display:block!important;border:0;box-shadow:none;padding:0}.preview{border:0;padding:0}.preview h3{break-after:avoid}button{display:none}}
+</style>
+</head>
+<body>
+<header>
+<h1>Template Mudah RPH & Analisis</h1>
+<p>Aplikasi ringkas untuk merancang pengajaran, merekod pencapaian murid dan menjana refleksi.</p>
+</header>
+<main>
+<div class="toolbar no-print">
+<button onclick="generatePreview()">Jana Paparan Lengkap RPH</button>
+<button class="dark" onclick="window.print()">Cetak / Simpan PDF</button>
+<button class="secondary" onclick="saveRecord()">Simpan Rekod</button>
+<button class="secondary" onclick="loadRecord()">Muat Rekod</button>
+<button class="danger" onclick="clearForm()">Kosongkan Borang</button>
+</div>
+<div class="tabs no-print">
+<button class="active" data-tab="rph" onclick="showTab('rph',this)">1. Maklumat RPH</button>
+<button data-tab="lesson" onclick="showTab('lesson',this)">2. Aktiviti Pengajaran</button>
+<button data-tab="analysis" onclick="showTab('analysis',this)">3. Analisis & Refleksi</button>
+<button data-tab="dskp" onclick="showTab('dskp',this)">4. DSKP</button><button data-tab="preview" onclick="showTab('preview',this)">5. Paparan Lengkap</button>
+</div>
+
+<section class="panel tab-panel" id="rph">
+<h2>Maklumat Asas RPH</h2>
+<div class="grid">
+<div class="field"><label>Nama Guru</label><input id="teacher" value=""></div>
+<div class="field"><label>Sekolah</label><input id="school" value="SMK Dato’ Syed Omar"></div>
+<div class="field"><label>Peringkat</label><select id="level" onchange="refreshLevels()"><option value="lower">Menengah Rendah</option><option value="upper">Menengah Atas</option></select></div><div class="field"><label>Tingkatan</label><select id="formLevel" onchange="refreshClasses()"></select></div><div class="field"><label>Mata Pelajaran</label><select id="subject" onchange="refreshDSKP()"></select></div>
+<div class="field"><label>Kelas</label><select id="className"></select></div><div class="field wide" id="upperClassEditor" style="display:none"><label>Tambah Kelas Menengah Atas (Tingkatan 4 atau 5)</label><div style="display:flex;gap:8px"><input id="newUpperClass" placeholder="Masukkan nama kelas sebenar"><button type="button" onclick="addUpperClass()">Tambah Kelas</button><button type="button" class="danger" onclick="deleteUpperClass()">Padam Kelas</button></div><p class="help">Nama kelas tambahan disimpan dalam pelayar ini mengikut tingkatan.</p></div>
+<div class="field"><label>Tarikh</label><input id="date" type="date"></div>
+<div class="field"><label>Hari</label><select id="day"><option value="">Pilih Hari</option><option value="Isnin">Isnin</option><option value="Selasa">Selasa</option><option value="Rabu">Rabu</option><option value="Khamis">Khamis</option><option value="Jumaat">Jumaat</option><option value="Sabtu">Sabtu</option><option value="Ahad">Ahad</option></select></div>
+<div class="field"><label>Masa</label><select id="time"><option value="">Pilih Masa</option><option value="7.40 - 8.20">7.40 - 8.20</option><option value="8.20 - 9.00">8.20 - 9.00</option><option value="9.40 - 10.20">9.40 - 10.20</option><option value="10.20 - 12.00">10.20 - 12.00</option><option value="12.00 - 12.40">12.00 - 12.40</option><option value="12.40 - 01.20">12.40 - 01.20</option><option value="01.20 - 02.00">01.20 - 02.00</option><option value="02.00 - 02.40">02.00 - 02.40</option></select></div>
+<div class="field"><label>Tempoh (minit)</label><input id="duration" type="number" min="1" value="60"></div>
+<div class="field"><label>Bilangan Murid</label><input id="total" type="number" min="0" value="30"></div>
+<div class="field wide"><label>Tajuk Pengajaran</label><input id="topic" placeholder="Masukkan tajuk pelajaran"></div><div class="field wide"><label>Bidang DSKP</label><select id="bidangChoice" onchange="chooseDSKP('bidang')"></select><input id="bidang" placeholder="Isi bidang secara manual jika tiada data" style="margin-top:6px"></div><div class="field wide"><label>Pilih Standard Kandungan</label><select id="skChoice" onchange="chooseDSKP('sk')"></select></div><div class="field wide"><label>Pilih Standard Pembelajaran</label><select id="spChoice" onchange="chooseDSKP('sp')"></select></div><div class="field wide"><label>Pilih Standard Prestasi</label><select id="tpChoice" onchange="chooseDSKP('tp')"></select></div><div class="field wide notice" id="dskpHelp">Pilih standard daripada data yang tersedia atau masukkan secara manual di bawah. Anda juga boleh menyimpan standard sendiri untuk dipilih semula.</div>
+<div class="field wide"><button type="button" onclick="saveCurrentDSKP()">Simpan Standard ke Pilihan</button> <button type="button" class="secondary" onclick="clearDSKPSelection()">Kosongkan Pilihan Standard</button></div>
+<div class="field"><label>Standard Kandungan (SK)</label><textarea id="sk" placeholder="Masukkan SK berdasarkan DSKP yang berkenaan"></textarea></div>
+<div class="field"><label>Standard Pembelajaran (SP)</label><textarea id="sp" placeholder="Masukkan SP berdasarkan DSKP yang berkenaan"></textarea></div>
+<div class="field"><label>Standard Prestasi / TP (jika berkenaan)</label><textarea id="tp" placeholder="Tahap penguasaan atau evidens"></textarea></div>
+<div class="field wide"><label>Objektif Pembelajaran</label><textarea id="objectives" placeholder="Pada akhir pembelajaran, murid dapat..."></textarea></div>
+<div class="field wide"><label>Kriteria Kejayaan</label><textarea id="criteria" placeholder="Murid berjaya apabila mereka dapat..."></textarea></div>
+<div class="field"><label>Pengetahuan Sedia Ada</label><textarea id="prior"></textarea></div>
+<div class="field"><label>BBM / ABM / Sumber</label><textarea id="materials" placeholder="Buku teks, lembaran kerja, GeoGebra..."></textarea></div>
+<div class="field"><label>EMK / Nilai / KBAT</label><textarea id="emk" placeholder="Pilih yang relevan"></textarea></div>
+</div>
+</section>
+
+<section class="panel tab-panel hidden" id="lesson">
+<h2>Langkah Pengajaran dan Pembelajaran</h2>
+<p class="help">Isi aktiviti sebenar yang dirancang. Struktur ini boleh disesuaikan mengikut model 5E atau pendekatan PdP lain.</p>
+<div class="grid">
+<div class="field"><label>Set Induksi (minit)</label><input id="inductionMin" value="5"></div>
+<div class="field wide"><label>Aktiviti Set Induksi</label><textarea id="induction" placeholder="Pencetus minat, soalan rangsangan atau situasi harian"></textarea></div>
+<div class="field"><label>Langkah 1 (minit)</label><input id="step1Min" value="15"></div>
+<div class="field wide"><label>Aktiviti Guru dan Murid – Langkah 1</label><textarea id="step1" placeholder="Penerangan, penerokaan atau demonstrasi"></textarea></div>
+<div class="field"><label>Langkah 2 (minit)</label><input id="step2Min" value="20"></div>
+<div class="field wide"><label>Aktiviti Guru dan Murid – Langkah 2</label><textarea id="step2" placeholder="Latihan, perbincangan atau pembelajaran koperatif"></textarea></div>
+<div class="field"><label>Langkah 3 (minit)</label><input id="step3Min" value="15"></div>
+<div class="field wide"><label>Aktiviti Guru dan Murid – Langkah 3</label><textarea id="step3" placeholder="Aplikasi, pembentangan atau pentaksiran"></textarea></div>
+<div class="field"><label>Penutup (minit)</label><input id="closureMin" value="5"></div>
+<div class="field wide"><label>Rumusan / Penutup</label><textarea id="closure" placeholder="Rumusan isi utama, exit ticket atau refleksi murid"></textarea></div>
+<div class="field wide"><label>Pentaksiran Bilik Darjah (PBD)</label><textarea id="assessment" placeholder="Pemerhatian, soal jawab, latihan, kuiz, hasil kerja atau kaedah lain"></textarea></div>
+<div class="field wide"><label>Pembezaan / Pemulihan / Pengayaan</label><textarea id="differentiate" placeholder="Sokongan kepada murid yang memerlukan dan aktiviti pengayaan"></textarea></div>
+</div>
+</section>
+
+<section class="panel tab-panel hidden" id="analysis">
+<h2>Analisis Pencapaian & Refleksi Guru</h2>
+<div class="grid">
+<div class="field"><label>Murid hadir</label><input id="present" type="number" min="0" value="30" oninput="updateStats()"></div>
+<div class="field"><label>Menguasai objektif</label><input id="mastered" type="number" min="0" value="24" oninput="updateStats()"></div>
+<div class="field"><label>Belum menguasai</label><input id="notMastered" type="number" min="0" value="6" oninput="updateStats()"></div>
+</div>
+<div class="stats" style="margin:16px 0">
+<div class="stat"><span>Peratus menguasai</span><strong id="rate">80%</strong></div>
+<div class="stat"><span>Peratus belum menguasai</span><strong id="lowRate">20%</strong></div>
+<div class="stat"><span>Semakan data</span><strong id="check" style="font-size:16px">Seimbang</strong></div>
+</div>
+<div class="grid">
+<div class="field wide"><label>Analisis Pembelajaran</label><textarea id="analysisText" placeholder="Apakah objektif yang telah dicapai? Corak kesilapan atau miskonsepsi yang dikenal pasti?"></textarea></div>
+<div class="field"><label>Kekuatan PdP</label><textarea id="strengths"></textarea></div>
+<div class="field"><label>Isu / Cabaran</label><textarea id="challenges"></textarea></div>
+<div class="field"><label>Tindakan Susulan</label><textarea id="followup" placeholder="Pemulihan, pengukuhan, pengayaan atau pengajaran semula"></textarea></div>
+<div class="field wide"><label>Refleksi Guru</label><textarea id="reflection" placeholder="Contoh: __ daripada __ murid mencapai objektif. Murid yang belum menguasai akan mengikuti aktiviti pemulihan pada sesi seterusnya."></textarea></div>
+</div>
+<p class="notice">Nota: Peratus dikira berdasarkan bilangan murid yang hadir. Semak bahawa bilangan menguasai dan belum menguasai bersamaan dengan jumlah hadir. Angka analisis perlu berdasarkan evidens sebenar PBD.</p>
+</section>
+
+<section class="panel tab-panel hidden" id="dskp"><h2>DSKP</h2><p>Import rekod DSKP rasmi dalam format JSON. Maklumat DSKP bagi setiap mata pelajaran akan dipaparkan berdasarkan tingkatan yang dipilih setelah data kurikulum rasmi dikemas kini dalam sistem.</p><input id="dskpFile" type="file" accept=".json"><p><button onclick="importDSKP()">Import Data DSKP</button> <button class="secondary" onclick="downloadExample()">Muat Turun Format JSON</button></p><div class="notice" id="dskpStatus"></div></section><section class="panel hidden" id="previewPanel">
+<div class="preview" id="preview">
+<h2>RANCANGAN PENGAJARAN HARIAN (RPH)</h2>
+<p>Lengkapkan borang dan tekan <b>Jana Paparan Lengkap RPH</b>.</p>
+</div>
+</section>
+<footer>Template RPH & Analisis • Sila semak SK/SP berdasarkan DSKP rasmi yang terpakai.</footer>
+</main>
+<script>
+const ids=['level','formLevel','bidang','teacher','school','subject','className','date','day','time','duration','total','topic','sk','sp','tp','objectives','criteria','prior','materials','emk','inductionMin','induction','step1Min','step1','step2Min','step2','step3Min','step3','closureMin','closure','assessment','differentiate','present','mastered','notMastered','analysisText','strengths','challenges','followup','reflection'];
+const $=id=>document.getElementById(id);
+function val(id){return ($(id)?.value||'').trim()}
+function safe(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])).replace(/\n/g,'<br>')}
+function showTab(id,btn){document.querySelectorAll('.tab-panel').forEach(x=>x.classList.add('hidden'));$('previewPanel').classList.add('hidden');if(id==='preview'){$('previewPanel').classList.remove('hidden');generatePreview()}else $(id).classList.remove('hidden');document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));btn.classList.add('active')}
+function updateStats(){let p=Number(val('present'))||0,m=Number(val('mastered'))||0,n=Number(val('notMastered'))||0; $('rate').textContent=(p?Math.round(m/p*100):0)+'%';$('lowRate').textContent=(p?Math.round(n/p*100):0)+'%';$('check').textContent=(m+n===p)?'Seimbang':'Semak angka';$('check').style.color=(m+n===p)?'#087e8b':'#a83246'}
+function row(label,id){return `<tr><th>${label}</th><td>${safe(val(id))||'—'}</td></tr>`}
+function section(title,body){return `<h3>${title}</h3>${body}`}
+function generatePreview(){
+ updateStats();
+ const meta=`<table>${row('Nama Guru','teacher')}${row('Sekolah','school')}${row('Mata Pelajaran','subject')}${row('Tingkatan / Kelas','className')}${row('Tarikh / Hari','date')}${row('Masa','time')}${row('Tempoh','duration')}${row('Bilangan Murid','total')}${row('Tajuk Pengajaran','topic')}${row('Bidang','bidang')}</table>`;
+ const standards=`<table>${row('Standard Kandungan (SK)','sk')}${row('Standard Pembelajaran (SP)','sp')}${row('Standard Prestasi / TP','tp')}${row('Objektif Pembelajaran','objectives')}${row('Kriteria Kejayaan','criteria')}${row('Pengetahuan Sedia Ada','prior')}${row('BBM / ABM / Sumber','materials')}${row('EMK / Nilai / KBAT','emk')}</table>`;
+ const steps=[['Set Induksi','inductionMin','induction'],['Langkah 1','step1Min','step1'],['Langkah 2','step2Min','step2'],['Langkah 3','step3Min','step3'],['Penutup','closureMin','closure']];
+ const st=`<table><tr><th>Fasa</th><th>Tempoh (minit)</th><th>Aktiviti</th></tr>${steps.map(s=>`<tr><td>${s[0]}</td><td>${safe(val(s[1]))||'—'}</td><td>${safe(val(s[2]))||'—'}</td></tr>`).join('')}</table>`;
+ const extra=`<table>${row('Pentaksiran Bilik Darjah','assessment')}${row('Pembezaan / Pemulihan / Pengayaan','differentiate')}</table>`;
+ const p=Number(val('present'))||0,m=Number(val('mastered'))||0,n=Number(val('notMastered'))||0,rate=p?Math.round(m/p*100):0,low=p?Math.round(n/p*100):0;
+ const ana=`<table><tr><th>Murid hadir</th><td>${p}</td></tr><tr><th>Menguasai objektif</th><td>${m} (${rate}%)</td></tr><tr><th>Belum menguasai</th><td>${n} (${low}%)</td></tr>${row('Analisis Pembelajaran','analysisText')}${row('Kekuatan PdP','strengths')}${row('Isu / Cabaran','challenges')}${row('Tindakan Susulan','followup')}${row('Refleksi Guru','reflection')}</table>`;
+ $('preview').innerHTML=`<h2>RANCANGAN PENGAJARAN HARIAN (RPH)</h2>${meta}${section('STANDARD, OBJEKTIF & PERSEDIAAN',standards)}${section('LANGKAH PENGAJARAN DAN PEMBELAJARAN',st)}${section('PENTAKSIRAN & PEMBEZAAN',extra)}${section('ANALISIS & REFLEKSI',ana)}<p style="font-size:11px;color:#64748b">Dokumen dijana menggunakan Template Mudah RPH & Analisis. Sila sahkan kandungan kurikulum berdasarkan DSKP rasmi.</p>`;
+}
+function saveRecord(){try{const d={};ids.forEach(id=>d[id]=$(id).value);localStorage.setItem('templateRPHAnalisis',JSON.stringify(d));alert('Rekod disimpan pada pelayar/peranti ini.');}catch(e){alert('Pelayar tidak membenarkan simpanan setempat. Sila cetak sebagai PDF.');}}
+function loadRecord(){try{const d=JSON.parse(localStorage.getItem('templateRPHAnalisis')||'null');if(!d){alert('Tiada rekod tersimpan pada pelayar ini.');return}if(d.level)$('level').value=d.level;refreshLevels();if(d.formLevel)$('formLevel').value=d.formLevel;refreshClasses();ids.forEach(id=>{if(d[id]!==undefined && $(id))$(id).value=d[id]});refreshDSKP();updateStats();alert('Rekod dimuatkan.');}catch(e){alert('Rekod tidak dapat dimuatkan.');}}
+function clearForm(){if(!confirm('Kosongkan semua maklumat borang? Pastikan rekod penting telah disimpan.'))return;ids.forEach(id=>{if(['teacher','school','level','formLevel','className','subject'].includes(id))return;$(id).value=''});$('duration').value=60;$('total').value=30;$('present').value=30;$('mastered').value=24;$('notMastered').value=6;refreshLevels();updateStats();$('preview').innerHTML='<h2>RANCANGAN PENGAJARAN HARIAN (RPH)</h2><p>Lengkapkan borang dan tekan <b>Jana Paparan Lengkap RPH</b>.</p>'}
+
+const LOW=["Bahasa Melayu", "Bahasa Arab", "Bahasa Inggeris", "Sains", "Matematik", "Sejarah", "Geografi", "Pendidikan Seni Visual", "Pendidikan Moral", "Pendidikan Agama Islam", "Reka Bentuk Teknologi (RBT)"],HIGH=["Bahasa Melayu", "Bahasa Inggeris", "Bahasa Arab", "Sejarah", "Matematik", "Sains", "Pendidikan Agama Islam", "Matematik Tambahan", "Perakaunan", "Perniagaan", "Pendidikan Seni Visual", "Tasawur Islam", "Biologi", "Fizik", "Kimia", "Pendidikan Al Quran & Sunnah", "Pendidikan Shariah Islamiah", "Pendidikan Moral", "Geografi", "Reka Cipta", "Sains Komputer"],CLASSES=['KAA1','KAA2','KRK1','KRK2','Berlian','Delima','Mutiara','Permata'];
+let records=[];try{records=JSON.parse(localStorage.getItem('rphDSKP')||'[]')}catch(e){}
+function opts(id,arr,label){const el=$(id),old=el.value;el.innerHTML='';el.add(new Option(label,''));[...new Set(arr.filter(Boolean))].forEach(x=>el.add(new Option(x,x)));if([...el.options].some(o=>o.value===old))el.value=old}
+function refreshLevels(){opts('formLevel',$('level').value==='lower'?['1','2','3']:['4','5'],'Pilih tingkatan');if(!$('formLevel').value)$('formLevel').selectedIndex=1;refreshClasses()}
+function upperClasses(){try{return JSON.parse(localStorage.getItem('rphUpperClasses_'+$('formLevel').value)||'[]')}catch(e){return []}}
+function addUpperClass(){const name=$('newUpperClass').value.trim();if(!name){alert('Masukkan nama kelas.');return}const list=upperClasses();if(!list.includes(name))list.push(name);localStorage.setItem('rphUpperClasses_'+$('formLevel').value,JSON.stringify(list));const key='rphHiddenUpperClasses_'+$('formLevel').value;let hidden=[];try{hidden=JSON.parse(localStorage.getItem(key)||'[]')}catch(e){}localStorage.setItem(key,JSON.stringify(hidden.filter(x=>x!==name)));refreshClasses();$('className').value=name;$('newUpperClass').value=''}
+function deleteUpperClass(){
+ const name=$('className').value;
+ if(!name){alert('Sila pilih kelas yang hendak dipadam.');return}
+ if($('level').value!=='upper'){alert('Fungsi ini hanya untuk kelas Menengah Atas.');return}
+ if(!confirm('Padam kelas "'+name+'" daripada Tingkatan '+$('formLevel').value+'?'))return;
+ const list=upperClasses();
+ if(list.includes(name)){
+   localStorage.setItem('rphUpperClasses_'+$('formLevel').value,JSON.stringify(list.filter(x=>x!==name)));
+ }else{
+   const key='rphHiddenUpperClasses_'+$('formLevel').value;
+   let hidden=[];try{hidden=JSON.parse(localStorage.getItem(key)||'[]')}catch(e){}
+   if(!hidden.includes(name))hidden.push(name);
+   localStorage.setItem(key,JSON.stringify(hidden));
+ }
+ refreshClasses();$('className').value='';
+ alert('Kelas berjaya dipadam daripada senarai pilihan pada peranti ini.');
+}
+function visibleUpperClasses(){
+ let hidden=[];try{hidden=JSON.parse(localStorage.getItem('rphHiddenUpperClasses_'+$('formLevel').value)||'[]')}catch(e){}
+ return [...CLASSES,...upperClasses()].filter(x=>!hidden.includes(x));
+}
+function refreshClasses(){const upper=$('level').value==='upper';$('upperClassEditor').style.display=upper?'block':'none';opts('className',upper?visibleUpperClasses():CLASSES,'Pilih kelas');opts('subject',$('level').value==='lower'?LOW:HIGH,'Pilih subjek');if(!$('subject').value)$('subject').value='Matematik';refreshDSKP()}
+function filtered(){return records.filter(r=>String(r.tingkatan)===$('formLevel').value&&r.mataPelajaran===$('subject').value)}
+function uniqueValues(a){return [...new Set(a.filter(Boolean))]}
+function refreshDSKP(){
+ const a=filtered();
+ for(const [field,name] of [['bidang','Bidang'],['sk','Standard Kandungan'],['sp','Standard Pembelajaran'],['tp','Standard Prestasi']])opts(field+'Choice',uniqueValues(a.map(r=>r[field])),'Pilih '+name);
+ const msg=a.length?`${a.length} rekod tersedia untuk tingkatan dan mata pelajaran ini.`:'Belum ada standard tersimpan bagi tingkatan dan mata pelajaran ini. Isi standard dalam ruangan manual, kemudian tekan “Simpan Standard ke Pilihan”, atau import DSKP rasmi di DSKP.';
+ $('dskpStatus').textContent=msg;$('dskpHelp').textContent=msg;
+}
+function chooseDSKP(field){
+ const v=$(field+'Choice').value;
+ $(field).value=v;
+ const chain=['bidang','sk','sp','tp'];
+ for(let i=chain.indexOf(field)+1;i<chain.length;i++){$(chain[i]).value='';}
+ const a=filtered().filter(r=>(!val('bidang')||r.bidang===val('bidang'))&&(!val('sk')||r.sk===val('sk'))&&(!val('sp')||r.sp===val('sp')));
+ for(let i=chain.indexOf(field)+1;i<chain.length;i++){
+ const k=chain[i];opts(k+'Choice',uniqueValues(a.map(r=>r[k])),'Pilih '+({'sk':'Standard Kandungan','sp':'Standard Pembelajaran','tp':'Standard Prestasi'}[k]||'Bidang'));
+ }
+}
+function saveCurrentDSKP(){
+ const r={tingkatan:$('formLevel').value,mataPelajaran:$('subject').value,bidang:val('bidang'),sk:val('sk'),sp:val('sp'),tp:val('tp')};
+ if(!r.tingkatan||!r.mataPelajaran||!r.sk||!r.sp){alert('Pilih tingkatan dan mata pelajaran serta isi sekurang-kurangnya Standard Kandungan dan Standard Pembelajaran.');return;}
+ if(!records.some(x=>JSON.stringify(x)===JSON.stringify(r)))records.push(r);
+ try{localStorage.setItem('rphDSKP',JSON.stringify(records))}catch(e){alert('Penyimpanan gagal. Semak ruang simpanan pelayar.');return}
+ refreshDSKP();$('bidangChoice').value=r.bidang;$('skChoice').value=r.sk;$('spChoice').value=r.sp;$('tpChoice').value=r.tp;
+ alert('Standard berjaya disimpan dalam pilihan pada pelayar ini.');
+}
+function clearDSKPSelection(){for(const k of ['bidang','sk','sp','tp'])$(k).value='';refreshDSKP()}
+function importDSKP(){const f=$('dskpFile').files[0];if(!f){alert('Sila pilih fail JSON');return}const r=new FileReader();r.onload=()=>{try{let a=JSON.parse(r.result);if(!Array.isArray(a)||!a.every(x=>['tingkatan','mataPelajaran','bidang','sk','sp','tp'].every(k=>typeof x[k]==='string')))throw Error('Struktur JSON tidak sah');records=a;localStorage.setItem('rphDSKP',JSON.stringify(a));refreshDSKP();alert(a.length+' rekod berjaya diimport')}catch(e){alert('Import gagal: '+e.message)}};r.readAsText(f)}
+function downloadExample(){const a=[{tingkatan:'1',mataPelajaran:'Matematik',bidang:'',sk:'',sp:'',tp:''}];const u=URL.createObjectURL(new Blob([JSON.stringify(a,null,2)],{type:'application/json'}));const e=document.createElement('a');e.href=u;e.download='format_dskp.json';e.click();URL.revokeObjectURL(u)}
+refreshLevels();$('date').value=new Date().toISOString().slice(0,10);updateStats();
+</script>
+</body>
+</html>
