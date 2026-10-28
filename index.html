@@ -111,7 +111,22 @@ footer{text-align:center;color:var(--muted);padding:14px;font-size:12px}
 <p class="notice">Nota: Peratus dikira berdasarkan bilangan murid yang hadir. Semak bahawa bilangan menguasai dan belum menguasai bersamaan dengan jumlah hadir. Angka analisis perlu berdasarkan evidens sebenar PBD.</p>
 </section>
 
-<section class="panel tab-panel hidden" id="dskp"><h2>DSKP</h2><p>Import rekod DSKP rasmi dalam format JSON. Maklumat DSKP bagi setiap mata pelajaran akan dipaparkan berdasarkan tingkatan yang dipilih setelah data kurikulum rasmi dikemas kini dalam sistem.</p><input id="dskpFile" type="file" accept=".json"><p><button onclick="importDSKP()">Import Data DSKP</button> <button class="secondary" onclick="downloadExample()">Muat Turun Format JSON</button></p><div class="notice" id="dskpStatus"></div></section><section class="panel hidden" id="previewPanel">
+<section class="panel tab-panel hidden" id="dskp">
+<h2>DSKP</h2>
+<p>Muat naik dokumen DSKP dalam <strong>format PDF sahaja</strong>. Dokumen disimpan secara setempat dalam pelayar peranti ini dan boleh dibuka semula untuk rujukan.</p>
+<div class="field"><label for="dskpPdf">Pilih Fail DSKP (PDF)</label>
+<input id="dskpPdf" type="file" accept=".pdf,application/pdf" aria-label="Pilih fail PDF DSKP"></div>
+<p><button type="button" onclick="uploadDSKPPdf()">Muat Naik PDF DSKP</button></p>
+<div class="notice" id="pdfStatus" role="status">Belum ada fail PDF dipilih.</div>
+<h3>Dokumen DSKP yang Disimpan</h3>
+<div id="pdfList"><p>Tiada dokumen disimpan lagi.</p></div>
+<div id="pdfPreviewArea" hidden>
+<h3>Paparan Dokumen PDF</h3>
+<iframe id="pdfPreview" title="Paparan dokumen DSKP PDF" style="width:100%;height:600px;border:1px solid #d9e2ec;border-radius:8px"></iframe>
+</div>
+<p class="help">Nota: Muat naik PDF membolehkan guru menyimpan dan membaca dokumen DSKP. PDF tidak ditukar secara automatik menjadi pilihan Standard Kandungan, Standard Pembelajaran atau Standard Prestasi. Untuk pilihan tersebut, data berstruktur masih diperlukan.</p>
+<div class="notice" id="dskpStatus"></div>
+</section><section class="panel hidden" id="previewPanel">
 <div class="preview" id="preview">
 <h2>RANCANGAN PENGAJARAN HARIAN (RPH)</h2>
 <p>Lengkapkan borang dan tekan <b>Jana Paparan Lengkap RPH</b>.</p>
@@ -198,9 +213,61 @@ function saveCurrentDSKP(){
  alert('Standard berjaya disimpan dalam pilihan pada pelayar ini.');
 }
 function clearDSKPSelection(){for(const k of ['bidang','sk','sp','tp'])$(k).value='';refreshDSKP()}
-function importDSKP(){const f=$('dskpFile').files[0];if(!f){alert('Sila pilih fail JSON');return}const r=new FileReader();r.onload=()=>{try{let a=JSON.parse(r.result);if(!Array.isArray(a)||!a.every(x=>['tingkatan','mataPelajaran','bidang','sk','sp','tp'].every(k=>typeof x[k]==='string')))throw Error('Struktur JSON tidak sah');records=a;localStorage.setItem('rphDSKP',JSON.stringify(a));refreshDSKP();alert(a.length+' rekod berjaya diimport')}catch(e){alert('Import gagal: '+e.message)}};r.readAsText(f)}
-function downloadExample(){const a=[{tingkatan:'1',mataPelajaran:'Matematik',bidang:'',sk:'',sp:'',tp:''}];const u=URL.createObjectURL(new Blob([JSON.stringify(a,null,2)],{type:'application/json'}));const e=document.createElement('a');e.href=u;e.download='format_dskp.json';e.click();URL.revokeObjectURL(u)}
-refreshLevels();$('date').value=new Date().toISOString().slice(0,10);updateStats();
+
+let activePdfUrl=null;
+function pdfDatabase(){
+ return new Promise((resolve,reject)=>{
+  const req=indexedDB.open('rph-dskp-pdf-v1',1);
+  req.onupgradeneeded=()=>req.result.createObjectStore('pdfs',{keyPath:'id',autoIncrement:true});
+  req.onsuccess=()=>resolve(req.result);
+  req.onerror=()=>reject(req.error);
+ });
+}
+async function pdfOperation(mode,record){
+ const db=await pdfDatabase();
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction('pdfs',mode==='read'?'readonly':'readwrite');
+  const store=tx.objectStore('pdfs');
+  const req=mode==='read'?store.getAll():mode==='delete'?store.delete(record):store.add(record);
+  req.onsuccess=()=>resolve(req.result);
+  req.onerror=()=>reject(req.error);
+  tx.oncomplete=()=>db.close();
+ });
+}
+async function uploadDSKPPdf(){
+ const f=$('dskpPdf').files[0];
+ if(!f){$('pdfStatus').textContent='Sila pilih fail PDF dahulu.';return}
+ const isPdf=f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf');
+ if(!isPdf){$('pdfStatus').textContent='Hanya fail PDF dibenarkan.';return}
+ if(f.size>25*1024*1024){$('pdfStatus').textContent='Fail terlalu besar. Had maksimum ialah 25 MB.';return}
+ try{
+  const signature=new Uint8Array(await f.slice(0,5).arrayBuffer());
+  if(String.fromCharCode(...signature)!=='%PDF-')throw Error('Fail bukan PDF yang sah.');
+  await pdfOperation('add',{name:f.name,blob:f,date:new Date().toISOString()});
+  $('dskpPdf').value='';
+  $('pdfStatus').textContent='Dokumen PDF berjaya disimpan dalam pelayar ini.';
+  await listDSKPPdfs();
+ }catch(e){$('pdfStatus').textContent='Tidak dapat menyimpan PDF: '+e.message}
+}
+async function listDSKPPdfs(){
+ const target=$('pdfList');if(!target)return;
+ try{
+  const rows=await pdfOperation('read');
+  target.replaceChildren();
+  if(!rows.length){const p=document.createElement('p');p.textContent='Tiada dokumen disimpan lagi.';target.append(p);return}
+  for(const r of rows){
+   const row=document.createElement('div');
+   row.style.cssText='display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0';
+   const name=document.createElement('span');name.textContent=r.name;name.style.flex='1';
+   const view=document.createElement('button');view.textContent='Buka PDF';view.type='button';
+   view.onclick=()=>{if(activePdfUrl)URL.revokeObjectURL(activePdfUrl);activePdfUrl=URL.createObjectURL(r.blob);$('pdfPreview').src=activePdfUrl;$('pdfPreviewArea').hidden=false};
+   const del=document.createElement('button');del.textContent='Padam';del.type='button';del.className='secondary';
+   del.onclick=async()=>{if(!confirm('Padam dokumen '+r.name+'?'))return;await pdfOperation('delete',r.id);$('pdfPreviewArea').hidden=true;await listDSKPPdfs()};
+   row.append(name,view,del);target.append(row);
+  }
+ }catch(e){target.textContent='Storan PDF tidak tersedia dalam pelayar ini: '+e.message}
+}
+document.addEventListener('DOMContentLoaded',listDSKPPdfs);
 </script>
 </body>
 </html>
